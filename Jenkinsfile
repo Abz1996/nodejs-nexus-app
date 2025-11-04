@@ -36,9 +36,13 @@ pipeline {
                 always {
                     junit 'coverage/junit.xml'
                     publishHTML([
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
                         reportDir: 'coverage',
                         reportFiles: 'index.html',
-                        reportName: 'Coverage Report'
+                        reportName: 'Coverage Report',
+                        reportTitles: ''
                     ])
                 }
             }
