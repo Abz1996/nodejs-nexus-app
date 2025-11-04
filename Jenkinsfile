@@ -2,7 +2,7 @@ pipeline {
     agent any
     
     environment {
-        DOCKER_REGISTRY = 'nexus.example.com:8082'
+        DOCKER_REGISTRY = 'ec2-100-24-42-119.compute-1.amazonaws.com:8082'
         NEXUS_CREDENTIALS = credentials('nexus-credentials')
         APP_NAME = 'cicd-demo-app'
         NAMESPACE = 'production'
@@ -72,16 +72,17 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    sh """
-                        kubectl set image deployment/${APP_NAME} \
-                            ${APP_NAME}=${DOCKER_REGISTRY}/${APP_NAME}:${IMAGE_TAG} \
-                            -n ${NAMESPACE}
-                        kubectl rollout status deployment/${APP_NAME} -n ${NAMESPACE}
-                    """
+                    withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
+                        sh """
+                            kubectl set image deployment/cicd-demo-app \
+                                cicd-demo-app=${DOCKER_REGISTRY}/${APP_NAME}:${IMAGE_TAG} \
+                                -n ${NAMESPACE}
+                            kubectl rollout status deployment/cicd-demo-app -n ${NAMESPACE}
+                        """
+                    }
                 }
             }
         }
-    }
     
     post {
         always {
