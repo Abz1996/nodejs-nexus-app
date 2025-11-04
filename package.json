@@ -13,10 +13,22 @@
   },
   "devDependencies": {
     "jest": "^29.5.0",
+    "jest-junit": "^16.0.0",
     "supertest": "^6.3.3"
   },
   "jest": {
     "testEnvironment": "node",
+    "coverageDirectory": "coverage",
+    "collectCoverageFrom": [
+      "src/**/*.js"
+    ],
+    "reporters": [
+      "default",
+      ["jest-junit", {
+        "outputDirectory": "coverage",
+        "outputName": "junit.xml"
+      }]
+    ],
     "coverageThreshold": {
       "global": {
         "branches": 80,
