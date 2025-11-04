@@ -1,13 +1,13 @@
 pipeline {
     agent any
-    
+
     environment {
         DOCKER_REGISTRY = 'ec2-100-24-42-119.compute-1.amazonaws.com:8082'
         NEXUS_CREDENTIALS = credentials('nexus-credentials')
         APP_NAME = 'cicd-demo-app'
         NAMESPACE = 'production'
     }
-    
+
     stages {
         stage('Checkout') {
             steps {
@@ -21,13 +21,13 @@ pipeline {
                 }
             }
         }
-        
+
         stage('Install Dependencies') {
             steps {
                 sh 'npm ci'
             }
         }
-        
+
         stage('Run Tests') {
             steps {
                 sh 'npm run test:ci'
@@ -43,7 +43,7 @@ pipeline {
                 }
             }
         }
-        
+
         stage('Build Docker Image') {
             steps {
                 script {
@@ -55,7 +55,7 @@ pipeline {
                 }
             }
         }
-        
+
         stage('Push to Nexus') {
             steps {
                 script {
@@ -68,32 +68,35 @@ pipeline {
                 }
             }
         }
-        
+
         stage('Deploy to Kubernetes') {
             steps {
                 script {
                     withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
                         sh """
-                            kubectl set image deployment/cicd-demo-app \
-                                cicd-demo-app=${DOCKER_REGISTRY}/${APP_NAME}:${IMAGE_TAG} \
+                            kubectl set image deployment/${APP_NAME} \
+                                ${APP_NAME}=${DOCKER_REGISTRY}/${APP_NAME}:${IMAGE_TAG} \
                                 -n ${NAMESPACE}
-                            kubectl rollout status deployment/cicd-demo-app -n ${NAMESPACE}
+                            kubectl rollout status deployment/${APP_NAME} -n ${NAMESPACE}
                         """
                     }
                 }
             }
         }
-    
+    }
+
     post {
         always {
-            sh 'docker logout ${DOCKER_REGISTRY}'
-            cleanWs()
+            script {
+                sh "docker logout ${DOCKER_REGISTRY}"
+                cleanWs()
+            }
         }
         success {
-            echo "Pipeline succeeded! Deployed ${IMAGE_TAG}"
+            echo "✅ Pipeline succeeded! Deployed image: ${IMAGE_TAG}"
         }
         failure {
-            echo "Pipeline failed!"
+            echo "❌ Pipeline failed!"
         }
     }
 }
