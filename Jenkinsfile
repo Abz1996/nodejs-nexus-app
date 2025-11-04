@@ -74,17 +74,26 @@ pipeline {
         }
         
         stage('Deploy to Kubernetes') {
-            steps {
+             steps {
                 script {
                     withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
                         sh """
-                            kubectl set image deployment/cicd-demo-app \
-                                cicd-demo-app=${DOCKER_REGISTRY}/${APP_NAME}:${IMAGE_TAG} \
-                                -n ${NAMESPACE}
+                            # Check if deployment exists
+                            if kubectl get deployment cicd-demo-app -n ${NAMESPACE} > /dev/null 2>&1; then
+                                echo "Deployment exists, updating image..."
+                                kubectl set image deployment/cicd-demo-app \
+                                    cicd-demo-app=${DOCKER_REGISTRY}/${APP_NAME}:${IMAGE_TAG} \
+                                    -n ${NAMESPACE}
+                             else
+                                 echo "Deployment doesn't exist, creating from manifests..."
+                                kubectl apply -f k8s/ -n ${NAMESPACE}
+                            fi
+                    
+                            # Wait for rollout to complete
                             kubectl rollout status deployment/cicd-demo-app -n ${NAMESPACE}
                         """
                     }
-                }
+                 }
             }
         }
     }
